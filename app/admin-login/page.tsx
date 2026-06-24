@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
         <form className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-ink-soft mb-1">Email</label>
-            <Input name="email" type="email" placeholder="admin@example.com" required />
+            <Input name="email" type="email" placeholder="hello@leora.design" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-ink-soft mb-1">Password</label>
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
               Sign In
             </Button>
             <Button formAction={handleRegister} type="submit" variant="outline" className="flex-1" disabled={loading}>
-              Register
+              Register Admin
             </Button>
           </div>
         </form>
