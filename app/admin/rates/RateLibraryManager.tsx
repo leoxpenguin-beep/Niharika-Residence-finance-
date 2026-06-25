@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Edit2, Trash2, Search, Power, PowerOff, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Power, PowerOff, Filter, AlertCircle, CheckCircle2 } from "lucide-react";
 import { saveRate, deleteRate, toggleRateActive } from "./rate-actions";
 
 type RateTableType = "material_rates" | "hardware_rates" | "accessory_rates" | "labour_rates" | "vendor_rates";
@@ -43,6 +43,8 @@ export default function RateLibraryManager({
   
   const [editingItem, setEditingItem] = useState<Partial<RateItem> | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const getActiveData = () => {
@@ -68,16 +70,36 @@ export default function RateLibraryManager({
 
   const handleOpenModal = (item?: RateItem) => {
     setEditingItem(item || { cost_basis: "fixed", default_margin_percentage: 25, default_wastage_percentage: 0, is_active: true });
+    setErrorMsg(null);
+    setSuccessMsg(null);
     setModalOpen(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
+
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    // Sanitize numeric fields to prevent NaN errors
+    const sanitizedItem = {
+      ...editingItem,
+      unit_rate: Number(editingItem.unit_rate) || 0,
+      default_margin_percentage: Number(editingItem.default_margin_percentage) || 0,
+      default_wastage_percentage: Number(editingItem.default_wastage_percentage) || 0,
+      thickness_mm: editingItem.thickness_mm ? String(editingItem.thickness_mm) : null,
+    };
+
     startTransition(async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await saveRate(activeTab, editingItem as any);
-      setModalOpen(false);
+      const res = await saveRate(activeTab, sanitizedItem as any);
+      if (res.error) {
+        setErrorMsg(res.error);
+      } else {
+        setSuccessMsg("Rate saved successfully!");
+        setTimeout(() => setModalOpen(false), 1500);
+      }
     });
   };
 
@@ -196,6 +218,16 @@ export default function RateLibraryManager({
               <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-ink text-xl leading-none">&times;</button>
             </div>
             <div className="p-5 overflow-y-auto">
+              {errorMsg && (
+                <div className="mb-4 flex items-center gap-2 bg-destructive/10 text-destructive text-sm p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" /> {errorMsg}
+                </div>
+              )}
+              {successMsg && (
+                <div className="mb-4 flex items-center gap-2 bg-green-100 text-green-800 text-sm p-3 rounded-lg">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> {successMsg}
+                </div>
+              )}
               <form id="rateForm" onSubmit={handleSave} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
@@ -230,12 +262,12 @@ export default function RateLibraryManager({
 
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase">Unit Rate (₹) *</label>
-                    <input type="number" step="any" required className={inputClass} value={editingItem.unit_rate || ""} onChange={e => setEditingItem({...editingItem, unit_rate: parseFloat(e.target.value)})} />
+                    <input type="number" step="any" required className={inputClass} value={editingItem.unit_rate ?? ""} onChange={e => setEditingItem({...editingItem, unit_rate: e.target.value ? parseFloat(e.target.value) : 0})} />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase">Default Margin %</label>
-                    <input type="number" step="any" className={inputClass} value={editingItem.default_margin_percentage || 0} onChange={e => setEditingItem({...editingItem, default_margin_percentage: parseFloat(e.target.value)})} />
+                    <input type="number" step="any" className={inputClass} value={editingItem.default_margin_percentage ?? ""} onChange={e => setEditingItem({...editingItem, default_margin_percentage: e.target.value ? parseFloat(e.target.value) : 0})} />
                   </div>
 
                   {activeTab === "material_rates" && (
@@ -246,7 +278,7 @@ export default function RateLibraryManager({
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase">Default Wastage %</label>
-                        <input type="number" step="any" className={inputClass} value={editingItem.default_wastage_percentage || 0} onChange={e => setEditingItem({...editingItem, default_wastage_percentage: parseFloat(e.target.value)})} />
+                        <input type="number" step="any" className={inputClass} value={editingItem.default_wastage_percentage ?? ""} onChange={e => setEditingItem({...editingItem, default_wastage_percentage: e.target.value ? parseFloat(e.target.value) : 0})} />
                       </div>
                     </>
                   )}
