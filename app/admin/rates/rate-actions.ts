@@ -59,11 +59,21 @@ export async function bulkSaveRates(payloadByTable: Record<string, any[]>) {
       // Find existing
       const { data: existing } = await supabase.from(table).select("id").eq("item_name", row.item_name).maybeSingle();
       
+      // Strip importer-only fields
+      const {
+        rate_type,
+        action,
+        target_table,
+        duplicate_status,
+        preview_status,
+        ...cleanRow
+      } = row;
+      
       if (existing) {
-        const { error } = await supabase.from(table).update(row).eq("id", existing.id);
+        const { error } = await supabase.from(table).update(cleanRow).eq("id", existing.id);
         if (error) return { error: `Failed to update ${row.item_name} in ${table}: ${error.message}` };
       } else {
-        const { error } = await supabase.from(table).insert(row);
+        const { error } = await supabase.from(table).insert(cleanRow);
         if (error) return { error: `Failed to insert ${row.item_name} into ${table}: ${error.message}` };
       }
     }
