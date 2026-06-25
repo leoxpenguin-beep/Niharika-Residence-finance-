@@ -83,13 +83,25 @@ export default function RateLibraryManager({
     setSuccessMsg(null);
 
     // Sanitize numeric fields to prevent NaN errors
-    const sanitizedItem = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sanitizedItem: any = {
       ...editingItem,
       unit_rate: Number(editingItem.unit_rate) || 0,
       default_margin_percentage: Number(editingItem.default_margin_percentage) || 0,
-      default_wastage_percentage: Number(editingItem.default_wastage_percentage) || 0,
-      thickness_mm: editingItem.thickness_mm ? String(editingItem.thickness_mm) : null,
     };
+
+    if (activeTab === "material_rates") {
+      sanitizedItem.default_wastage_percentage = Number(editingItem.default_wastage_percentage) || 0;
+      sanitizedItem.thickness_mm = editingItem.thickness_mm ? String(editingItem.thickness_mm) : null;
+    } else {
+      delete sanitizedItem.default_wastage_percentage;
+      delete sanitizedItem.thickness_mm;
+    }
+
+    if (activeTab === "labour_rates") {
+      delete sanitizedItem.brand_name;
+      delete sanitizedItem.vendor_name;
+    }
 
     startTransition(async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
