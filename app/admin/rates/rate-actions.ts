@@ -46,3 +46,29 @@ export async function toggleRateActive(table: string, id: string, currentState: 
   revalidatePath("/admin/rates");
   return { success: true };
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function bulkSaveRates(payloadByTable: Record<string, any[]>) {
+  const supabase = await createClient();
+  
+  for (const [table, rows] of Object.entries(payloadByTable)) {
+    if (rows.length === 0) continue;
+    
+    // Simple loop for updates/inserts
+    for (const row of rows) {
+      // Find existing
+      const { data: existing } = await supabase.from(table).select("id").eq("item_name", row.item_name).maybeSingle();
+      
+      if (existing) {
+        const { error } = await supabase.from(table).update(row).eq("id", existing.id);
+        if (error) return { error: `Failed to update ${row.item_name} in ${table}: ${error.message}` };
+      } else {
+        const { error } = await supabase.from(table).insert(row);
+        if (error) return { error: `Failed to insert ${row.item_name} into ${table}: ${error.message}` };
+      }
+    }
+  }
+  
+  revalidatePath("/admin/rates");
+  return { success: true };
+}

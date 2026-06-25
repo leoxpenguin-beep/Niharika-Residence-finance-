@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Plus, Edit2, Trash2, Search, Power, PowerOff, Filter, AlertCircle, CheckCircle2 } from "lucide-react";
 import { saveRate, deleteRate, toggleRateActive } from "./rate-actions";
+import BulkImportModal from "./BulkImportModal";
 
 type RateTableType = "material_rates" | "hardware_rates" | "accessory_rates" | "labour_rates" | "vendor_rates";
 
@@ -29,6 +30,10 @@ export interface RateItem {
   default_wastage_percentage?: number;
   default_margin_percentage: number;
   notes?: string;
+  source_file_name?: string;
+  quotation_number?: string;
+  quotation_date?: string;
+  source_notes?: string;
   is_active: boolean;
 }
 
@@ -43,6 +48,7 @@ export default function RateLibraryManager({
   
   const [editingItem, setEditingItem] = useState<Partial<RateItem> | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isBulkModalOpen, setBulkModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -91,10 +97,8 @@ export default function RateLibraryManager({
     };
 
     if (activeTab === "material_rates") {
-      sanitizedItem.default_wastage_percentage = Number(editingItem.default_wastage_percentage) || 0;
       sanitizedItem.thickness_mm = editingItem.thickness_mm ? String(editingItem.thickness_mm) : null;
     } else {
-      delete sanitizedItem.default_wastage_percentage;
       delete sanitizedItem.thickness_mm;
     }
 
@@ -150,9 +154,14 @@ export default function RateLibraryManager({
             </button>
           ))}
         </div>
-        <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-taupe text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-taupe/90 whitespace-nowrap shrink-0">
-          <Plus className="w-4 h-4" /> Add New Rate
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => setBulkModalOpen(true)} className="flex items-center gap-2 bg-muted text-ink border border-border/50 px-4 py-2 rounded-xl text-sm font-medium hover:bg-muted/80 whitespace-nowrap">
+            Bulk Import (CSV)
+          </button>
+          <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-taupe text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-taupe/90 whitespace-nowrap">
+            <Plus className="w-4 h-4" /> Add New Rate
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4">
@@ -310,6 +319,14 @@ export default function RateLibraryManager({
             </div>
           </div>
         </div>
+      )}
+
+      {isBulkModalOpen && (
+        <BulkImportModal
+          defaultTab={activeTab}
+          existingData={getActiveData()}
+          onClose={() => setBulkModalOpen(false)}
+        />
       )}
     </div>
   );
